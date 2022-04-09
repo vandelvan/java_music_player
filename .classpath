@@ -7,5 +7,6 @@
 	</classpathentry>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="lib" path="/home/vandelvan/Downloads/jlayer-1.0.1.jar"/>
+	<classpathentry kind="lib" path="/home/vandelvan/Downloads/jaudiotagger-3.0.1.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

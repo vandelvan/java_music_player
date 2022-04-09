@@ -28,7 +28,11 @@ import java.awt.event.ActionEvent;
 public class Main extends JFrame {
 
 	private JPanel contentPane;
-
+	private Music player = new Music();
+	private int songIdx;
+	private JButton btnNext = new JButton("»");
+	private JButton btnPrev = new JButton("«");
+	private JList songQueue;
 	/**
 	 * Launch the application.
 	 */
@@ -59,38 +63,47 @@ public class Main extends JFrame {
 		File s = new File("/home/vandelvan/Music");
 		File[] songList = s.listFiles();
 		
-		JList songQueue = new JList(songList);
+		songQueue = new JList(songList);
 		contentPane.add(songQueue, BorderLayout.CENTER);
 		
 		JPanel panel = new JPanel();
 		contentPane.add(panel, BorderLayout.SOUTH);
 		panel.setLayout(new BorderLayout(0, 0));
 		
-		JButton btnPlay = new JButton("New button");
-		btnPlay.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-		        try(FileInputStream fis=new FileInputStream((File)songQueue.getSelectedValue())){
-		            Player player=new Player(fis);
-		            player.play();
-		        }catch (JavaLayerException e1) {
-		        	System.out.println( "No es un fichero de audio");
-		        }catch (IOException ex) {
-		        	System.out.println("");
-		        }
-			}
-		});
+		JButton btnPlay = new JButton("\u25B6\uFE0F");
+		
 		panel.add(btnPlay, BorderLayout.CENTER);
 		
-		JButton btnPrev = new JButton("New button");
+		btnPrev.setEnabled(false);
 		btnPrev.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
+				songIdx--;
+				player.stop();
+				player = null;
+				player = new Music();
+				songQueue.setSelectedIndex(songIdx);
+				player.setSong((File)songQueue.getSelectedValue());
+				player.start();
+				player.setPlaying(true);
+				btnPlay.setText("||");
+				checkBounds();
 			}
 		});
 		panel.add(btnPrev, BorderLayout.WEST);
 		
-		JButton btnNext = new JButton("New button");
+		btnNext.setEnabled(false);
 		btnNext.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
+				songIdx++;
+				player.stop();
+				player = null;
+				player = new Music();
+				songQueue.setSelectedIndex(songIdx);
+				player.setSong((File)songQueue.getSelectedValue());
+				player.start();
+				player.setPlaying(true);
+				btnPlay.setText("||");
+				checkBounds();
 			}
 		});
 		panel.add(btnNext, BorderLayout.EAST);
@@ -103,6 +116,55 @@ public class Main extends JFrame {
 		
 		JLabel lblReproductorDeMusica = new JLabel("Reproductor de musica");
 		contentPane.add(lblReproductorDeMusica, BorderLayout.NORTH);
+		
+		btnPlay.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				int sidx = songQueue.getSelectedIndex();
+				if((!player.isPlaying() || songIdx != sidx) && sidx != -1)
+				{
+					if(songIdx != sidx) 
+					{
+						player.stop();
+						player = null;
+						player = new Music();
+						songIdx = sidx;
+					}
+					player.setSong((File)songQueue.getSelectedValue());
+					player.start();
+					player.setPlaying(true);
+					btnPlay.setText("||");
+				}
+				else
+				{
+					player.stop();
+					player = null;
+					player = new Music();
+					btnPlay.setText("\u25B6\uFE0F");
+				}
+				checkBounds();
+			}
+		});
+	}
+	
+	private void checkBounds()
+	{
+
+		if(songIdx == songQueue.getModel().getSize()-1)
+		{
+			btnNext.setEnabled(false);
+		}
+		else
+		{
+			btnNext.setEnabled(true);
+		}
+		if(songIdx == 0)
+		{
+			btnPrev.setEnabled(false);
+		}
+		else
+		{
+			btnPrev.setEnabled(true);
+		}
 	}
 
 }
