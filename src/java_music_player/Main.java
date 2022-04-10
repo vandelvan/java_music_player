@@ -6,6 +6,14 @@ import java.awt.EventQueue;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
+
+import org.jaudiotagger.audio.AudioFile;
+import org.jaudiotagger.audio.AudioFileIO;
+import org.jaudiotagger.audio.exceptions.CannotReadException;
+import org.jaudiotagger.audio.exceptions.InvalidAudioFrameException;
+import org.jaudiotagger.audio.exceptions.ReadOnlyFileException;
+import org.jaudiotagger.tag.TagException;
+
 import javax.swing.JList;
 import javax.swing.JOptionPane;
 
@@ -23,16 +31,24 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Random;
 import java.awt.event.ActionEvent;
 
 public class Main extends JFrame {
 
 	private JPanel contentPane;
-	private Music player = new Music();
-	private int songIdx;
-	private JButton btnNext = new JButton("»");
-	private JButton btnPrev = new JButton("«");
-	private JList songQueue;
+	private static JProgressBar songProgressBar = new JProgressBar();
+	private static MusicUI player = new MusicUI(songProgressBar);
+	private static Song song = new Song();
+	private static int songIdx;
+	private static JButton btnNext = new JButton("»");
+	private static JButton btnPrev = new JButton("«");
+	private static JList songQueue;
+	private static JButton btnPlay = new JButton("\u25B6\uFE0F");
+	private static int pos = 0;
+	private final JButton btnShuffle = new JButton("Shuffle");
+	private static boolean shuffle = false;
+	private static int lastSongIdx = -1;
 	/**
 	 * Launch the application.
 	 */
@@ -59,7 +75,7 @@ public class Main extends JFrame {
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 		contentPane.setLayout(new BorderLayout(0, 0));
 		setContentPane(contentPane);
-		
+
 		File s = new File("/home/vandelvan/Music");
 		File[] songList = s.listFiles();
 		
@@ -70,23 +86,12 @@ public class Main extends JFrame {
 		contentPane.add(panel, BorderLayout.SOUTH);
 		panel.setLayout(new BorderLayout(0, 0));
 		
-		JButton btnPlay = new JButton("\u25B6\uFE0F");
-		
 		panel.add(btnPlay, BorderLayout.CENTER);
 		
 		btnPrev.setEnabled(false);
 		btnPrev.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				songIdx--;
-				player.stop();
-				player = null;
-				player = new Music();
-				songQueue.setSelectedIndex(songIdx);
-				player.setSong((File)songQueue.getSelectedValue());
-				player.start();
-				player.setPlaying(true);
-				btnPlay.setText("||");
-				checkBounds();
+				moveQueue(false);
 			}
 		});
 		panel.add(btnPrev, BorderLayout.WEST);
@@ -94,22 +99,27 @@ public class Main extends JFrame {
 		btnNext.setEnabled(false);
 		btnNext.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				songIdx++;
-				player.stop();
-				player = null;
-				player = new Music();
-				songQueue.setSelectedIndex(songIdx);
-				player.setSong((File)songQueue.getSelectedValue());
-				player.start();
-				player.setPlaying(true);
-				btnPlay.setText("||");
-				checkBounds();
+				moveQueue(true);
 			}
 		});
 		panel.add(btnNext, BorderLayout.EAST);
 		
-		JProgressBar songProgressBar = new JProgressBar();
 		panel.add(songProgressBar, BorderLayout.NORTH);
+		btnShuffle.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				shuffle = !shuffle;
+				if(shuffle)
+				{
+					btnShuffle.setText("Desactivar shuffle");
+				}
+				else
+				{
+					btnShuffle.setText("Shuffle");					
+				}
+			}
+		});
+		
+		panel.add(btnShuffle, BorderLayout.SOUTH);
 		
 		JLabel lblCancionesEnCola = new JLabel("Canciones en cola:");
 		contentPane.add(lblCancionesEnCola, BorderLayout.WEST);
@@ -120,33 +130,46 @@ public class Main extends JFrame {
 		btnPlay.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				int sidx = songQueue.getSelectedIndex();
-				if((!player.isPlaying() || songIdx != sidx) && sidx != -1)
+				if((!song.isPlaying() || songIdx != sidx) && sidx != -1)
 				{
 					if(songIdx != sidx) 
 					{
+						pos = 0;
 						player.stop();
+						song.stop();
 						player = null;
-						player = new Music();
+						song = null;
+						player = new MusicUI(songProgressBar);
+						song = new Song();
+						lastSongIdx = songIdx;
 						songIdx = sidx;
 					}
 					player.setSong((File)songQueue.getSelectedValue());
+					song.setSong((File)songQueue.getSelectedValue());
+					player.setPos(pos);
 					player.start();
-					player.setPlaying(true);
+					song.setPlaying(true);
+					song.setPos(pos);
+					song.start();
 					btnPlay.setText("||");
 				}
 				else
 				{
 					player.stop();
+					song.stop();
 					player = null;
-					player = new Music();
+					song = null;
+					player = new MusicUI(songProgressBar);
+					song = new Song();
 					btnPlay.setText("\u25B6\uFE0F");
+					pos = songProgressBar.getValue();
 				}
 				checkBounds();
 			}
 		});
 	}
 	
-	private void checkBounds()
+	private static void checkBounds()
 	{
 
 		if(songIdx == songQueue.getModel().getSize()-1)
@@ -165,6 +188,59 @@ public class Main extends JFrame {
 		{
 			btnPrev.setEnabled(true);
 		}
+	}
+	
+	public static void moveQueue(boolean next)
+	{
+		if((songIdx == songQueue.getModel().getSize()-1 && next && !shuffle) || (songIdx == 0 && !next && lastSongIdx == -1))
+		{
+			pos = 0;
+			player.stop();
+			song.stop();
+			player = null;
+			song = null;
+			player = new MusicUI(songProgressBar);
+			song = new Song();
+			btnPlay.setText("\u25B6\uFE0F");
+			return;
+		}
+		if(next)
+		{
+			lastSongIdx = songIdx;
+			if(shuffle)
+			{
+				Random rand = new Random();
+				int auxIdx = songIdx;
+				while(auxIdx == songIdx)
+				{
+					auxIdx = rand.nextInt(songQueue.getModel().getSize());
+				}
+				songIdx = auxIdx;
+			}
+			else
+			{
+				songIdx++;
+			}
+		}
+		else
+		{
+			songIdx = lastSongIdx == -1 ? songIdx-1 : lastSongIdx;
+		}
+		pos = 0;
+		player.stop();
+		song.stop();
+		player = null;
+		song = null;
+		player = new MusicUI(songProgressBar);
+		song = new Song();
+		songQueue.setSelectedIndex(songIdx);
+		player.setSong((File)songQueue.getSelectedValue());
+		song.setSong((File)songQueue.getSelectedValue());
+		player.start();
+		song.setPlaying(true);
+		song.start();
+		btnPlay.setText("||");
+		checkBounds();
 	}
 
 }
