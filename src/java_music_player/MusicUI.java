@@ -1,8 +1,6 @@
 package java_music_player;
 
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 
 import javax.swing.JProgressBar;
@@ -13,9 +11,6 @@ import org.jaudiotagger.audio.exceptions.CannotReadException;
 import org.jaudiotagger.audio.exceptions.InvalidAudioFrameException;
 import org.jaudiotagger.audio.exceptions.ReadOnlyFileException;
 import org.jaudiotagger.tag.TagException;
-
-import javazoom.jl.decoder.JavaLayerException;
-import javazoom.jl.player.Player;
 
 public class MusicUI extends Thread  {
 	private File song = null;

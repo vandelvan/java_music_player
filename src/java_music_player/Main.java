@@ -6,36 +6,22 @@ import java.awt.EventQueue;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
-
-import org.jaudiotagger.audio.AudioFile;
-import org.jaudiotagger.audio.AudioFileIO;
-import org.jaudiotagger.audio.exceptions.CannotReadException;
-import org.jaudiotagger.audio.exceptions.InvalidAudioFrameException;
-import org.jaudiotagger.audio.exceptions.ReadOnlyFileException;
-import org.jaudiotagger.tag.TagException;
-
 import javax.swing.JList;
-import javax.swing.JOptionPane;
-
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-
-import javazoom.jl.decoder.JavaLayerException;
-import javazoom.jl.player.Player;
 
 import javax.swing.JButton;
 import javax.swing.JProgressBar;
 import javax.swing.JLabel;
 import java.awt.event.ActionListener;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.Random;
 import java.awt.event.ActionEvent;
 
 public class Main extends JFrame {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	private JPanel contentPane;
 	private static JProgressBar songProgressBar = new JProgressBar();
 	private static MusicUI player = new MusicUI(songProgressBar);
@@ -172,7 +158,7 @@ public class Main extends JFrame {
 	private static void checkBounds()
 	{
 
-		if(songIdx == songQueue.getModel().getSize()-1)
+		if(songIdx == songQueue.getModel().getSize()-1 && !shuffle)
 		{
 			btnNext.setEnabled(false);
 		}
@@ -180,7 +166,7 @@ public class Main extends JFrame {
 		{
 			btnNext.setEnabled(true);
 		}
-		if(songIdx == 0)
+		if(songIdx == 0 && lastSongIdx == -1)
 		{
 			btnPrev.setEnabled(false);
 		}
